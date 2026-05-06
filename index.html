@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sabin Chaudhary — Civil & Drone Survey Engineer</title>
+<meta name="description" content="Civil design engineer specializing in LiDAR, drone surveying, and road design across Nepal's most challenging terrain.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ─── Reset & Root ─── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --amber:    #C8852A;
+  --amber-lt: #E0A855;
+  --amber-dk: #8A5C1A;
+  --stone:    #6B5E42;
+  --cream:    #EDE3CC;
+  --cream-lt: #F5EFE0;
+  --ink:      #0D0B07;
+  --ink-lt:   #1A1710;
+  --mid:      #2E2A1C;
+  --muted:    #6B6245;
+  --fog:      rgba(13,11,7,0.6);
+
+  --font-display: 'Cormorant Garamond', serif;
+  --font-ui:      'Syne', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+html { scroll-behavior: auto; }
+
+body {
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--font-ui);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ─── Custom Cursor ─── */
+#cursor {
+  position: fixed;
+  width: 12px; height: 12px;
+  background: var(--amber);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s, width 0.3s, height 0.3s, opacity 0.3s;
+  mix-blend-mode: difference;
+}
+#cursor-ring {
+  position: fixed;
+  width: 40px; height: 40px;
+  border: 1px solid var(--amber);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s var(--ease-out-expo), width 0.4s, height 0.4s, opacity 0.3s;
+  opacity: 0.5;
+}
+body:hover #cursor { opacity: 1; }
+a:hover ~ #cursor, button:hover ~ #cursor { width: 20px; height: 20px; }
+
+/* ─── Scroll Progress ─── */
+#progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--amber-dk), var(--amber), var(--amber-lt));
+  z-index: 1000;
+  width: 0%;
+  transition: width 0.05s linear;
+}
+
+/* ─── Navigation ─── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 24px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  mix-blend-mode: normal;
+  transition: background 0.4s, padding 0.4s;
+}
+nav.scrolled {
+  background: rgba(13,11,7,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 16px 48px;
+  border-bottom: 0.5px solid rgba(200,133,42,0.2);
+}
+.nav-logo {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--cream);
+  text-decoration: none;
+}
+.nav-logo span { color: var(--amber); font-style: italic; }
+.nav-links {
+  display: flex;
+  gap: 36px;
+  list-style: none;
+}
+.nav-links a {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 0.3s;
+  position: relative;
+}
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -3px; left: 0;
+  width: 0; height: 0.5px;
+  background: var(--amber);
+  transition: width 0.3s var(--ease-out-expo);
+}
+.nav-links a:hover { color: var(--cream); }
+.nav-links a:hover::after { width: 100%; }
+
+/* ─── Scene Container ─── */
+#scene-wrapper {
+  position: relative;
+  height: 600vh;
+}
+
+#sticky-scene {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+/* ─── Sky / Background layer ─── */
+.layer {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  transform-origin: center center;
+}
+
+#layer-sky {
+  background: radial-gradient(ellipse 80% 60% at 50% 30%, #1e1608 0%, #0a0800 50%, #020100 100%);
+  z-index: 1;
+}
+
+/* Stars */
+#layer-stars {
+  z-index: 2;
+  overflow: hidden;
+}
+.star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  opacity: 0;
+  animation: twinkle var(--d, 3s) var(--delay, 0s) infinite alternate;
+}
+@keyframes twinkle { from { opacity: var(--lo, 0.1); } to { opacity: var(--hi, 0.6); } }
+
+/* Mountain layers */
+#layer-mtn-far {
+  z-index: 3;
+  bottom: 0;
+}
+#layer-mtn-mid {
+  z-index: 4;
+  bottom: 0;
+}
+#layer-mtn-near {
+  z-index: 5;
+  bottom: 0;
+}
+#layer-ground {
+  z-index: 6;
+  bottom: 0;
+}
+#layer-fog {
+  z-index: 7;
+  pointer-events: none;
+}
+#layer-vignette {
+  z-index: 8;
+  pointer-events: none;
+  background: radial-gradient(ellipse 100% 100% at 50% 50%, transparent 40%, rgba(13,11,7,0.8) 100%);
+}
+
+/* ─── Scene SVG fills ─── */
+.layer svg {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+}
+
+/* ─── Drone SVG ─── */
+#drone {
+  position: absolute;
+  z-index: 9;
+  width: 80px;
+  transform-origin: center;
+  filter: drop-shadow(0 8px 24px rgba(200,133,42,0.4));
+  transition: filter 0.5s;
+}
+
+/* ─── HUD Overlay ─── */
+#hud {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+.hud-corner {
+  position: absolute;
+  width: 60px; height: 60px;
+  border-color: rgba(200,133,42,0.3);
+  border-style: solid;
+  border-width: 0;
+}
+.hud-corner.tl { top: 80px; left: 48px; border-top-width: 1px; border-left-width: 1px; }
+.hud-corner.tr { top: 80px; right: 48px; border-top-width: 1px; border-right-width: 1px; }
+.hud-corner.bl { bottom: 48px; left: 48px; border-bottom-width: 1px; border-left-width: 1px; }
+.hud-corner.br { bottom: 48px; right: 48px; border-bottom-width: 1px; border-right-width: 1px; }
+.hud-line-h {
+  position: absolute;
+  top: 50%;
+  left: 80px; right: 80px;
+  height: 0.5px;
+  background: linear-gradient(90deg, transparent, rgba(200,133,42,0.15) 30%, rgba(200,133,42,0.15) 70%, transparent);
+}
+.hud-line-v {
+  position: absolute;
+  left: 50%;
+  top: 80px; bottom: 48px;
+  width: 0.5px;
+  background: linear-gradient(180deg, transparent, rgba(200,133,42,0.15) 30%, rgba(200,133,42,0.15) 70%, transparent);
+}
+.hud-data {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: rgba(200,133,42,0.6);
+  line-height: 1.8;
+}
+.hud-data.tl { top: 90px; left: 120px; }
+.hud-data.tr { top: 90px; right: 120px; text-align: right; }
+.hud-data.bl { bottom: 60px; left: 120px; }
+.hud-data.br { bottom: 60px; right: 120px; text-align: right; }
+.hud-crosshair {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px; height: 20px;
+  border: 0.5px solid rgba(200,133,42,0.4);
+  border-radius: 50%;
+}
+.hud-crosshair::before, .hud-crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgba(200,133,42,0.4);
+}
+.hud-crosshair::before { width: 8px; height: 0.5px; top: 50%; left: -14px; }
+.hud-crosshair::after { width: 0.5px; height: 8px; left: 50%; top: -14px; }
+
+/* ─── Hero Text Overlay ─── */
+#hero-text {
+  position: absolute;
+  z-index: 11;
+  left: 48px;
+  bottom: 15vh;
+  pointer-events: none;
+}
+.hero-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  color: var(--amber);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hero-tag::before {
+  content: '';
+  width: 32px; height: 0.5px;
+  background: var(--amber);
+}
+.hero-name {
+  font-family: var(--font-display);
+  font-size: clamp(60px, 8vw, 110px);
+  font-weight: 300;
+  line-height: 0.9;
+  color: var(--cream);
+  letter-spacing: -0.01em;
+}
+.hero-name em {
+  font-style: italic;
+  color: var(--amber);
+}
+.hero-desc {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 320px;
+  line-height: 1.7;
+  margin-top: 20px;
+  letter-spacing: 0.02em;
+}
+.hero-scroll-hint {
+  position: absolute;
+  right: 48px;
+  bottom: 15vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 11;
+}
+.scroll-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: rgba(200,133,42,0.5);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.scroll-track {
+  width: 0.5px;
+  height: 80px;
+  background: rgba(200,133,42,0.2);
+  position: relative;
+  overflow: hidden;
+}
+.scroll-thumb {
+  position: absolute;
+  top: -40px;
+  width: 100%; height: 40px;
+  background: linear-gradient(to bottom, transparent, var(--amber), transparent);
+  animation: scrollDrop 2s ease-in-out infinite;
+}
+@keyframes scrollDrop { 0% { top: -40px; } 100% { top: 80px; } }
+
+/* ─── Section Cards (after sticky scene) ─── */
+.content-section {
+  position: relative;
+  z-index: 20;
+  background: var(--ink-lt);
+}
+
+/* About */
+.about-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 120px 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+}
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--amber);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-label::before {
+  content: '';
+  width: 24px; height: 0.5px;
+  background: var(--amber);
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 300;
+  line-height: 1.05;
+  color: var(--cream);
+  margin-bottom: 28px;
+}
+.section-title em { font-style: italic; color: var(--amber); }
+.about-text {
+  font-size: 15px;
+  line-height: 1.85;
+  color: rgba(237,227,204,0.7);
+  margin-bottom: 16px;
+}
+.about-traits {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 48px;
+}
+.trait-row {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 20px;
+  align-items: start;
+  padding: 20px 0;
+  border-bottom: 0.5px solid rgba(200,133,42,0.1);
+  opacity: 0;
+  transform: translateX(30px);
+  transition: all 0.7s var(--ease-out-expo);
+}
+.trait-row.visible { opacity: 1; transform: none; }
+.trait-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--amber);
+  letter-spacing: 0.1em;
+  padding-top: 3px;
+}
+.trait-title { font-size: 15px; font-weight: 600; color: var(--cream); margin-bottom: 4px; }
+.trait-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* Stats */
+.stats-band {
+  background: var(--ink);
+  border-top: 0.5px solid var(--mid);
+  border-bottom: 0.5px solid var(--mid);
+  padding: 60px 48px;
+}
+.stats-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--mid);
+}
+.stat-box {
+  background: var(--ink-lt);
+  padding: 40px 32px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.6s var(--ease-out-expo);
+}
+.stat-box.visible { opacity: 1; transform: none; }
+.stat-num {
+  font-family: var(--font-display);
+  font-size: 64px;
+  font-weight: 300;
+  color: var(--amber);
+  line-height: 1;
+  display: block;
+}
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+
+/* Projects */
+.projects-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 120px 48px;
+}
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+  margin-top: 60px;
+  background: var(--mid);
+}
+.proj-card {
+  background: var(--ink-lt);
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(40px);
+  transition: all 0.8s var(--ease-out-expo);
+  cursor: pointer;
+}
+.proj-card.visible { opacity: 1; transform: none; }
+.proj-card-inner { padding: 40px; position: relative; z-index: 2; }
+.proj-visual {
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  border-bottom: 0.5px solid var(--mid);
+  overflow: hidden;
+  position: relative;
+}
+.proj-visual svg { transition: transform 0.6s var(--ease-out-expo); }
+.proj-card:hover .proj-visual svg { transform: scale(1.05); }
+.proj-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--amber);
+  margin-bottom: 12px;
+}
+.proj-title { font-family: var(--font-display); font-size: 24px; font-weight: 400; color: var(--cream); margin-bottom: 12px; }
+.proj-desc { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; }
+.proj-loc {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--amber);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.proj-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(200,133,42,0.04) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s;
+  z-index: 1;
+}
+.proj-card:hover::after { opacity: 1; }
+.proj-hover-line {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 0; height: 2px;
+  background: var(--amber);
+  transition: width 0.5s var(--ease-out-expo);
+}
+.proj-card:hover .proj-hover-line { width: 100%; }
+
+/* Skills */
+.skills-section {
+  background: var(--ink);
+  padding: 120px 48px;
+  border-top: 0.5px solid var(--mid);
+}
+.skills-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+}
+.skill-item {
+  margin-bottom: 28px;
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: all 0.6s var(--ease-out-expo);
+}
+.skill-item.visible { opacity: 1; transform: none; }
+.skill-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.skill-name { font-size: 13px; font-weight: 500; color: var(--cream); letter-spacing: 0.02em; }
+.skill-pct { font-family: var(--font-mono); font-size: 11px; color: var(--amber); }
+.skill-track { height: 2px; background: rgba(200,133,42,0.12); position: relative; }
+.skill-fill {
+  height: 100%; background: var(--amber);
+  width: 0;
+  transition: width 1.4s var(--ease-out-expo);
+  position: relative;
+}
+.skill-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: -3px;
+  width: 8px; height: 8px;
+  background: var(--amber-lt);
+  border-radius: 50%;
+}
+
+/* Timeline / Experience */
+.experience-section {
+  background: var(--ink-lt);
+  border-top: 0.5px solid var(--mid);
+  padding: 120px 48px;
+}
+.experience-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.timeline { margin-top: 60px; position: relative; padding-left: 32px; }
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 0.5px;
+  background: linear-gradient(to bottom, var(--amber), rgba(200,133,42,0.1));
+}
+.tl-entry {
+  position: relative;
+  margin-bottom: 56px;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: all 0.7s var(--ease-out-expo);
+}
+.tl-entry.visible { opacity: 1; transform: none; }
+.tl-dot {
+  position: absolute;
+  left: -37px; top: 4px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 0 4px rgba(200,133,42,0.15), 0 0 12px rgba(200,133,42,0.4);
+}
+.tl-date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--amber);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.tl-role { font-family: var(--font-display); font-size: 22px; font-weight: 400; color: var(--cream); margin-bottom: 4px; }
+.tl-org { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+.tl-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--stone);
+  border: 0.5px solid rgba(200,133,42,0.2);
+  padding: 5px 12px;
+  border-radius: 20px;
+  transition: all 0.3s;
+}
+.tag:hover { color: var(--amber); border-color: var(--amber); }
+
+/* Contact */
+.contact-section {
+  background: var(--ink);
+  border-top: 0.5px solid var(--mid);
+  padding: 120px 48px;
+}
+.contact-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+}
+.contact-links { display: flex; flex-direction: column; gap: 1px; margin-top: 48px; }
+.contact-link {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 0;
+  border-bottom: 0.5px solid rgba(200,133,42,0.08);
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 14px;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.contact-link::before {
+  content: '';
+  position: absolute;
+  left: -100%; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(200,133,42,0.04);
+  transition: left 0.4s var(--ease-out-expo);
+}
+.contact-link:hover::before { left: 0; }
+.contact-link:hover { color: var(--cream); padding-left: 8px; }
+.contact-link .icon {
+  width: 32px; height: 32px;
+  border: 0.5px solid rgba(200,133,42,0.2);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  color: var(--amber);
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+.contact-link:hover .icon { background: var(--amber); color: var(--ink); border-color: var(--amber); }
+.contact-link span { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.05em; }
+.contact-cta {
+  background: var(--ink-lt);
+  border: 0.5px solid rgba(200,133,42,0.2);
+  border-radius: 2px;
+  padding: 48px;
+  margin-top: 48px;
+}
+.cta-title { font-family: var(--font-display); font-size: 32px; font-weight: 300; color: var(--cream); margin-bottom: 16px; }
+.cta-desc { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 28px; }
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--amber);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 14px 28px;
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+.cta-btn:hover { background: var(--amber-lt); transform: translateY(-1px); }
+
+/* Footer */
+footer {
+  background: var(--ink);
+  border-top: 0.5px solid var(--mid);
+  padding: 32px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.footer-name { font-family: var(--font-display); font-size: 16px; color: var(--muted); }
+.footer-copy { font-family: var(--font-mono); font-size: 10px; color: rgba(107,98,69,0.5); letter-spacing: 0.1em; }
+
+/* ─── Animations ─── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s var(--ease-out-expo);
+}
+.fade-up.visible { opacity: 1; transform: none; }
+
+/* ─── Scene transition overlays ─── */
+#scene-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+}
+
+/* Altitude indicator */
+#altitude-indicator {
+  position: absolute;
+  right: 48px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.alt-track {
+  width: 2px;
+  height: 120px;
+  background: rgba(200,133,42,0.15);
+  position: relative;
+  border-radius: 1px;
+}
+.alt-thumb {
+  position: absolute;
+  width: 2px;
+  background: var(--amber);
+  bottom: 0;
+  border-radius: 1px;
+  transition: height 0.1s;
+  box-shadow: 0 0 8px rgba(200,133,42,0.5);
+}
+.alt-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: rgba(200,133,42,0.5);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.alt-value {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--amber);
+  letter-spacing: 0.1em;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  nav { padding: 20px 24px; }
+  .nav-links { gap: 20px; }
+  .about-wrap, .skills-inner, .contact-inner { grid-template-columns: 1fr; gap: 48px; padding: 80px 24px; }
+  .projects-wrap { padding: 80px 24px; }
+  .projects-grid { grid-template-columns: 1fr; }
+  .stats-inner { grid-template-columns: repeat(2, 1fr); }
+  .hero-scroll-hint { display: none; }
+  #hero-text { left: 24px; bottom: 12vh; }
+  .experience-section, .skills-section, .contact-section { padding: 80px 24px; }
+  footer { flex-direction: column; gap: 12px; padding: 24px; }
+  .hud-data.tr, .hud-data.br { display: none; }
+  #altitude-indicator { right: 16px; }
+}
+@media (max-width: 600px) {
+  .stats-inner { grid-template-columns: 1fr 1fr; }
+  .nav-links { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+<div id="progress-bar"></div>
+
+<!-- Navigation -->
+<nav id="main-nav">
+  <a href="#" class="nav-logo">Sabin <em>Chaudhary</em></a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     CINEMATIC SCROLL SCENE
+════════════════════════════════════════════ -->
+<div id="scene-wrapper">
+  <div id="sticky-scene">
+
+    <!-- Layer 1: Sky -->
+    <div class="layer" id="layer-sky"></div>
+
+    <!-- Layer 2: Stars -->
+    <div class="layer" id="layer-stars"></div>
+
+    <!-- Layer 3: Far mountains (very dark silhouette) -->
+    <div class="layer" id="layer-mtn-far">
+      <svg viewBox="0 0 1440 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice" style="min-height:400px">
+        <defs>
+          <linearGradient id="mtnFarGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0f0d08"/>
+            <stop offset="100%" stop-color="#06050300"/>
+          </linearGradient>
+        </defs>
+        <path d="M0,400 L0,300 L60,260 L100,290 L160,230 L220,270 L280,200 L340,240 L400,170 L460,210 L520,150 L600,100 L660,140 L720,80 L780,110 L840,60 L900,90 L960,50 L1020,80 L1080,40 L1140,70 L1200,30 L1260,65 L1320,25 L1380,55 L1440,20 L1440,400 Z" fill="url(#mtnFarGrad)"/>
+        <path d="M0,400 L0,320 L80,280 L160,300 L240,250 L320,270 L400,220 L480,245 L560,200 L640,220 L720,180 L800,200 L880,160 L960,185 L1040,150 L1120,175 L1200,140 L1280,165 L1360,135 L1440,155 L1440,400 Z" fill="#0a0807" opacity="0.9"/>
+      </svg>
+    </div>
+
+    <!-- Layer 4: Mid mountains -->
+    <div class="layer" id="layer-mtn-mid">
+      <svg viewBox="0 0 1440 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice" style="min-height:500px">
+        <defs>
+          <linearGradient id="mtnMidGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#161208"/>
+            <stop offset="80%" stop-color="#0d0b06"/>
+          </linearGradient>
+          <linearGradient id="snowGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ede3cc" stop-opacity="0.5"/>
+            <stop offset="100%" stop-color="#ede3cc" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <!-- Mountain body -->
+        <path d="M0,500 L0,380 L120,330 L200,360 L300,290 L380,330 L480,250 L560,290 L660,210 L740,170 L820,200 L900,150 L980,185 L1060,140 L1140,170 L1220,120 L1300,155 L1380,110 L1440,140 L1440,500 Z" fill="url(#mtnMidGrad)"/>
+        <!-- Snow caps -->
+        <path d="M740,170 L760,200 L820,200 L840,175 L900,150 L880,175 L860,195 L820,200 L800,185 L780,200 L760,200 Z" fill="url(#snowGrad)" opacity="0.6"/>
+        <path d="M1220,120 L1240,145 L1300,155 L1320,130 L1380,110 L1360,135 L1340,150 L1300,155 L1280,140 L1260,150 L1240,145 Z" fill="url(#snowGrad)" opacity="0.5"/>
+        <!-- Ridge highlight -->
+        <path d="M480,250 L560,290 L660,210 L740,170 L820,200 L900,150 L980,185 L1060,140 L1140,170 L1220,120 L1300,155 L1380,110 L1440,140" fill="none" stroke="rgba(200,133,42,0.08)" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <!-- Layer 5: Near mountains / hills -->
+    <div class="layer" id="layer-mtn-near">
+      <svg viewBox="0 0 1440 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice" style="min-height:600px">
+        <defs>
+          <linearGradient id="nearGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1a1608"/>
+            <stop offset="100%" stop-color="#0d0b06"/>
+          </linearGradient>
+        </defs>
+        <path d="M0,600 L0,440 L80,400 L180,430 L280,370 L380,410 L500,340 L600,380 L700,320 L800,360 L900,300 L1000,340 L1100,280 L1200,320 L1300,270 L1400,300 L1440,285 L1440,600 Z" fill="url(#nearGrad)"/>
+        <!-- terrain texture lines -->
+        <path d="M280,370 L320,390 L380,410 L440,395 L500,340" fill="none" stroke="rgba(200,133,42,0.05)" stroke-width="1"/>
+        <path d="M700,320 L750,350 L800,360 L850,335 L900,300" fill="none" stroke="rgba(200,133,42,0.05)" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <!-- Layer 6: Ground / foreground terrain -->
+    <div class="layer" id="layer-ground">
+      <svg viewBox="0 0 1440 700" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice" style="min-height:700px">
+        <defs>
+          <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#201c0e"/>
+            <stop offset="100%" stop-color="#0a0800"/>
+          </linearGradient>
+          <!-- Amber glow at bottom -->
+          <radialGradient id="groundGlow" cx="50%" cy="0%" r="60%">
+            <stop offset="0%" stop-color="rgba(200,133,42,0.12)"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </radialGradient>
+        </defs>
+        <!-- Ground fill -->
+        <path d="M0,700 L0,520 L100,490 L200,510 L320,470 L440,490 L560,460 L680,480 L800,450 L920,470 L1040,445 L1160,465 L1280,440 L1400,458 L1440,452 L1440,700 Z" fill="url(#groundGrad)"/>
+        <!-- Amber glow overlay -->
+        <path d="M0,700 L0,540 L1440,540 L1440,700 Z" fill="url(#groundGlow)"/>
+        <!-- Road / survey line detail -->
+        <path d="M300,650 L480,580 L680,560 L900,570 L1100,555 L1300,580" fill="none" stroke="rgba(200,133,42,0.15)" stroke-width="1.5" stroke-dasharray="8,6"/>
+        <!-- Horizon glow -->
+        <ellipse cx="720" cy="460" rx="400" ry="40" fill="rgba(200,133,42,0.06)"/>
+      </svg>
+    </div>
+
+    <!-- Atmospheric fog -->
+    <div class="layer" id="layer-fog">
+      <svg viewBox="0 0 1440 900" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice" style="height:100%">
+        <defs>
+          <radialGradient id="fogR" cx="50%" cy="60%" r="80%">
+            <stop offset="0%" stop-color="rgba(200,133,42,0.04)"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </radialGradient>
+          <linearGradient id="fogTop" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(13,11,7,0.7)"/>
+            <stop offset="35%" stop-color="transparent"/>
+          </linearGradient>
+          <linearGradient id="fogBtm" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="60%" stop-color="transparent"/>
+            <stop offset="100%" stop-color="rgba(13,11,7,0.8)"/>
+          </linearGradient>
+        </defs>
+        <rect width="1440" height="900" fill="url(#fogR)"/>
+        <rect width="1440" height="900" fill="url(#fogTop)"/>
+        <rect width="1440" height="900" fill="url(#fogBtm)"/>
+      </svg>
+    </div>
+
+    <!-- Vignette -->
+    <div class="layer" id="layer-vignette"></div>
+
+    <!-- Drone -->
+    <div id="drone">
+      <svg width="80" height="60" viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+        <g opacity="0.9">
+          <!-- Body -->
+          <rect x="28" y="24" width="24" height="12" rx="4" fill="#C8852A"/>
+          <!-- Arms -->
+          <line x1="28" y1="28" x2="10" y2="16" stroke="#8B7355" stroke-width="2"/>
+          <line x1="52" y1="28" x2="70" y2="16" stroke="#8B7355" stroke-width="2"/>
+          <line x1="28" y1="32" x2="10" y2="44" stroke="#8B7355" stroke-width="2"/>
+          <line x1="52" y1="32" x2="70" y2="44" stroke="#8B7355" stroke-width="2"/>
+          <!-- Rotors (animated) -->
+          <ellipse cx="10" cy="16" rx="9" ry="2" fill="rgba(200,133,42,0.5)" style="transform-origin:10px 16px;animation:spin 0.3s linear infinite"/>
+          <ellipse cx="70" cy="16" rx="9" ry="2" fill="rgba(200,133,42,0.5)" style="transform-origin:70px 16px;animation:spin 0.3s linear infinite reverse"/>
+          <ellipse cx="10" cy="44" rx="9" ry="2" fill="rgba(200,133,42,0.5)" style="transform-origin:10px 44px;animation:spin 0.3s linear infinite reverse"/>
+          <ellipse cx="70" cy="44" rx="9" ry="2" fill="rgba(200,133,42,0.5)" style="transform-origin:70px 44px;animation:spin 0.3s linear infinite"/>
+          <!-- Camera -->
+          <circle cx="40" cy="38" r="4" fill="#1A1710" stroke="#C8852A" stroke-width="0.5"/>
+          <circle cx="40" cy="38" r="2" fill="#C8852A" opacity="0.6"/>
+          <!-- LED -->
+          <circle cx="40" cy="26" r="2" fill="#C8852A" style="animation:blink 1.5s ease-in-out infinite"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div class="hud-corner tl"></div>
+      <div class="hud-corner tr"></div>
+      <div class="hud-corner bl"></div>
+      <div class="hud-corner br"></div>
+      <div class="hud-line-h"></div>
+      <div class="hud-line-v"></div>
+      <div class="hud-crosshair"></div>
+      <div class="hud-data tl">
+        <div>ALT: <span id="hud-alt">0400</span>m</div>
+        <div>LAT: 27.7172° N</div>
+        <div>LON: 85.3240° E</div>
+      </div>
+      <div class="hud-data tr">
+        <div>DIST: <span id="hud-dist">0.0</span>km</div>
+        <div>SPEED: 12 km/h</div>
+        <div>SIGNAL: ████</div>
+      </div>
+      <div class="hud-data bl">
+        <div>SABIN CHAUDHARY</div>
+        <div>CIVIL + UAV ENGINEER</div>
+      </div>
+      <div class="hud-data br">
+        <div>HYDROCON NEPAL</div>
+        <div>SURVEY MODE: LIDAR</div>
+      </div>
+    </div>
+
+    <!-- Altitude indicator -->
+    <div id="altitude-indicator">
+      <div class="alt-label">altitude</div>
+      <div class="alt-track">
+        <div class="alt-thumb" id="alt-thumb"></div>
+      </div>
+      <div class="alt-value" id="alt-val">400m</div>
+    </div>
+
+    <!-- Hero text -->
+    <div id="hero-text">
+      <div class="hero-tag">Civil & UAV survey engineer</div>
+      <div class="hero-name">Sabin<br><em>Chaudhary</em></div>
+      <div class="hero-desc">Mapping Nepal's terrain from ground to sky — LiDAR, drone surveys, and precision road design.</div>
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="hero-scroll-hint">
+      <div class="scroll-label">scroll</div>
+      <div class="scroll-track">
+        <div class="scroll-thumb"></div>
+      </div>
+    </div>
+
+    <!-- Scene overlay for transitions -->
+    <div id="scene-overlay"></div>
+
+  </div>
+</div>
+<!-- end scene wrapper -->
+
+
+<!-- ═══════════════════════════════════════════
+     CONTENT SECTIONS
+════════════════════════════════════════════ -->
+
+<!-- About -->
+<section class="content-section" id="about">
+  <div class="about-wrap">
+    <div>
+      <div class="section-label fade-up">Who I am</div>
+      <h2 class="section-title fade-up">Engineer.<br><em>Explorer.</em><br>Observer.</h2>
+      <p class="about-text fade-up">I'm a civil design engineer with deep expertise in the field — literally. From LiDAR drone surveys over Himalayan hydro projects to precise road alignments in remote Baitadi, I bring technical precision to Nepal's most challenging terrain.</p>
+      <p class="about-text fade-up">Trained in CAD, ArcGIS, Smart Road, and DGPS systems, I've served as site engineer, UAV trainer, and survey lead across a dozen major infrastructure projects throughout Nepal.</p>
+      <p class="about-text fade-up">Beyond engineering, I'm driven by a lifelong curiosity — exploring cultures, landscapes, and the quiet creativity hidden in nature. That wandering spirit informs both how I see terrain and how I solve problems.</p>
+    </div>
+    <div>
+      <div class="about-traits">
+        <div class="trait-row">
+          <div class="trait-num">01</div>
+          <div>
+            <div class="trait-title">Drone & LiDAR specialist</div>
+            <div class="trait-desc">UAV-based topographic mapping for hydro power and road corridor projects across diverse Himalayan terrain</div>
+          </div>
+        </div>
+        <div class="trait-row">
+          <div class="trait-num">02</div>
+          <div>
+            <div class="trait-title">Road design & field engineering</div>
+            <div class="trait-desc">Survey, alignment, as-built measurement and site coordination across Nepal's 7 provinces</div>
+          </div>
+        </div>
+        <div class="trait-row">
+          <div class="trait-num">03</div>
+          <div>
+            <div class="trait-title">Cultural explorer by nature</div>
+            <div class="trait-desc">Wandering through landscapes and cultures gives me perspective that goes beyond textbooks</div>
+          </div>
+        </div>
+        <div class="trait-row">
+          <div class="trait-num">04</div>
+          <div>
+            <div class="trait-title">UAV trainer & educator</div>
+            <div class="trait-desc">Trained Nepal Police personnel in aerial survey techniques at national headquarters</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats band -->
+<div class="stats-band">
+  <div class="stats-inner">
+    <div class="stat-box">
+      <span class="stat-num">1+</span>
+      <span class="stat-label">Years of field experience</span>
+    </div>
+    <div class="stat-box" style="transition-delay:.1s">
+      <span class="stat-num">12+</span>
+      <span class="stat-label">Field projects completed</span>
+    </div>
+    <div class="stat-box" style="transition-delay:.2s">
+      <span class="stat-num">7+</span>
+      <span class="stat-label">Districts surveyed</span>
+    </div>
+    <div class="stat-box" style="transition-delay:.3s">
+      <span class="stat-num">2</span>
+      <span class="stat-label">Hydro LiDAR projects</span>
+    </div>
+  </div>
+</div>
+
+<!-- Projects -->
+<section class="content-section" id="projects">
+  <div class="projects-wrap">
+    <div class="section-label fade-up">Field work highlights</div>
+    <h2 class="section-title fade-up">Key <em>projects</em></h2>
+    <div class="projects-grid">
+
+      <div class="proj-card">
+        <div class="proj-visual">
+          <svg width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 110 Q40 40 80 30 Q120 20 150 60" stroke="rgba(200,133,42,0.4)" stroke-width="1.5" fill="none"/>
+            <path d="M10 110 Q40 60 80 50 Q120 40 150 80" stroke="rgba(200,133,42,0.2)" stroke-width="1" fill="none"/>
+            <!-- Contour lines -->
+            <ellipse cx="80" cy="55" rx="30" ry="12" stroke="rgba(200,133,42,0.3)" stroke-width="0.8" fill="none"/>
+            <ellipse cx="80" cy="55" rx="50" ry="22" stroke="rgba(200,133,42,0.2)" stroke-width="0.8" fill="none"/>
+            <ellipse cx="80" cy="55" rx="70" ry="35" stroke="rgba(200,133,42,0.12)" stroke-width="0.8" fill="none"/>
+            <!-- Peak dot -->
+            <circle cx="80" cy="55" r="4" fill="#C8852A"/>
+            <circle cx="80" cy="55" r="8" fill="rgba(200,133,42,0.2)"/>
+            <!-- Scan lines -->
+            <line x1="20" y1="80" x2="140" y2="80" stroke="rgba(200,133,42,0.08)" stroke-width="0.5"/>
+            <line x1="20" y1="90" x2="140" y2="90" stroke="rgba(200,133,42,0.08)" stroke-width="0.5"/>
+            <line x1="20" y1="100" x2="140" y2="100" stroke="rgba(200,133,42,0.08)" stroke-width="0.5"/>
+          </svg>
+        </div>
+        <div class="proj-card-inner">
+          <div class="proj-num">01 — LiDAR</div>
+          <div class="proj-title">Tamor hydro power survey</div>
+          <div class="proj-desc">Drone-based LiDAR topographic mapping for hydro power feasibility in high-altitude Taplejung district.</div>
+          <div class="proj-loc"><i class="fa-solid fa-location-dot"></i> Taplejung, Koshi Province</div>
+        </div>
+        <div class="proj-hover-line"></div>
+      </div>
+
+      <div class="proj-card" style="transition-delay:.1s">
+        <div class="proj-visual">
+          <svg width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Road path -->
+            <path d="M10 100 Q40 80 60 60 Q80 40 110 35 Q135 30 150 20" stroke="rgba(200,133,42,0.5)" stroke-width="2.5" fill="none"/>
+            <path d="M10 105 Q40 85 60 65 Q80 45 110 40 Q135 35 150 25" stroke="rgba(200,133,42,0.15)" stroke-width="2" fill="none"/>
+            <!-- Survey points -->
+            <circle cx="30" cy="90" r="3" fill="#C8852A"/>
+            <circle cx="60" cy="60" r="3" fill="#C8852A"/>
+            <circle cx="100" cy="38" r="3" fill="#C8852A"/>
+            <circle cx="145" cy="22" r="3" fill="#C8852A"/>
+            <!-- Distance markers -->
+            <line x1="30" y1="90" x2="30" y2="110" stroke="rgba(200,133,42,0.3)" stroke-width="0.5"/>
+            <line x1="60" y1="60" x2="60" y2="110" stroke="rgba(200,133,42,0.3)" stroke-width="0.5"/>
+            <line x1="100" y1="38" x2="100" y2="110" stroke="rgba(200,133,42,0.3)" stroke-width="0.5"/>
+            <!-- Drone icon -->
+            <rect x="138" y="8" width="16" height="8" rx="2" fill="rgba(200,133,42,0.6)"/>
+            <circle cx="134" cy="10" r="3" fill="rgba(200,133,42,0.4)"/>
+            <circle cx="158" cy="10" r="3" fill="rgba(200,133,42,0.4)"/>
+          </svg>
+        </div>
+        <div class="proj-card-inner">
+          <div class="proj-num">02 — Drone Survey</div>
+          <div class="proj-title">Garje–Kate road corridor</div>
+          <div class="proj-desc">Full UAV drone survey of mountain road corridor in remote Baitadi for planning and design validation.</div>
+          <div class="proj-loc"><i class="fa-solid fa-location-dot"></i> Baitadi, Sudurpashchim Province</div>
+        </div>
+        <div class="proj-hover-line"></div>
+      </div>
+
+      <div class="proj-card" style="transition-delay:.2s">
+        <div class="proj-visual">
+          <svg width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Grid pattern for LiDAR point cloud -->
+            <g opacity="0.6">
+              <circle cx="30" cy="40" r="1.5" fill="#C8852A" opacity="0.8"/>
+              <circle cx="50" cy="35" r="1" fill="#C8852A" opacity="0.6"/>
+              <circle cx="70" cy="38" r="2" fill="#C8852A" opacity="0.9"/>
+              <circle cx="90" cy="32" r="1.5" fill="#C8852A" opacity="0.7"/>
+              <circle cx="110" cy="36" r="1" fill="#C8852A" opacity="0.5"/>
+              <circle cx="130" cy="30" r="2" fill="#C8852A" opacity="0.8"/>
+              <circle cx="40" cy="55" r="1" fill="#C8852A" opacity="0.5"/>
+              <circle cx="60" cy="50" r="1.5" fill="#C8852A" opacity="0.7"/>
+              <circle cx="80" cy="52" r="1" fill="#C8852A" opacity="0.6"/>
+              <circle cx="100" cy="48" r="2" fill="#C8852A" opacity="0.8"/>
+              <circle cx="120" cy="50" r="1" fill="#C8852A" opacity="0.5"/>
+              <circle cx="35" cy="70" r="2" fill="#C8852A" opacity="0.6"/>
+              <circle cx="65" cy="68" r="1.5" fill="#C8852A" opacity="0.8"/>
+              <circle cx="95" cy="65" r="1" fill="#C8852A" opacity="0.7"/>
+              <circle cx="125" cy="68" r="2" fill="#C8852A" opacity="0.5"/>
+            </g>
+            <!-- Hydro dam shape -->
+            <path d="M50 85 L50 70 L110 70 L110 85 Z" stroke="rgba(200,133,42,0.5)" stroke-width="1.5" fill="rgba(200,133,42,0.08)"/>
+            <path d="M40 85 L50 70 L50 85 Z" fill="rgba(200,133,42,0.2)"/>
+            <path d="M110 70 L120 85 L110 85 Z" fill="rgba(200,133,42,0.2)"/>
+            <!-- Water -->
+            <path d="M30 90 Q60 85 80 88 Q110 91 130 87" stroke="rgba(107,98,69,0.4)" stroke-width="1" fill="none"/>
+          </svg>
+        </div>
+        <div class="proj-card-inner">
+          <div class="proj-num">03 — LiDAR</div>
+          <div class="proj-title">SangriLa hydro power project</div>
+          <div class="proj-desc">LiDAR-based survey supporting topographic mapping for hydro power infrastructure in Sankhuwasabha.</div>
+          <div class="proj-loc"><i class="fa-solid fa-location-dot"></i> Sankhuwasabha, Koshi Province</div>
+        </div>
+        <div class="proj-hover-line"></div>
+      </div>
+
+      <div class="proj-card" style="transition-delay:.3s">
+        <div class="proj-visual">
+          <svg width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Badge / shield shape -->
+            <path d="M80 15 L110 30 L110 60 Q110 85 80 100 Q50 85 50 60 L50 30 Z" stroke="rgba(200,133,42,0.4)" stroke-width="1.5" fill="rgba(200,133,42,0.05)"/>
+            <!-- Drone inside shield -->
+            <rect x="70" y="48" width="20" height="10" rx="3" fill="rgba(200,133,42,0.7)"/>
+            <line x1="70" y1="51" x2="60" y2="44" stroke="rgba(200,133,42,0.5)" stroke-width="1.5"/>
+            <line x1="90" y1="51" x2="100" y2="44" stroke="rgba(200,133,42,0.5)" stroke-width="1.5"/>
+            <line x1="70" y1="55" x2="60" y2="62" stroke="rgba(200,133,42,0.5)" stroke-width="1.5"/>
+            <line x1="90" y1="55" x2="100" y2="62" stroke="rgba(200,133,42,0.5)" stroke-width="1.5"/>
+            <ellipse cx="60" cy="44" rx="6" ry="1.5" fill="rgba(200,133,42,0.4)"/>
+            <ellipse cx="100" cy="44" rx="6" ry="1.5" fill="rgba(200,133,42,0.4)"/>
+            <ellipse cx="60" cy="62" rx="6" ry="1.5" fill="rgba(200,133,42,0.4)"/>
+            <ellipse cx="100" cy="62" rx="6" ry="1.5" fill="rgba(200,133,42,0.4)"/>
+            <!-- Stars on badge -->
+            <circle cx="80" cy="35" r="2" fill="#C8852A"/>
+            <circle cx="72" cy="40" r="1.5" fill="rgba(200,133,42,0.5)"/>
+            <circle cx="88" cy="40" r="1.5" fill="rgba(200,133,42,0.5)"/>
+          </svg>
+        </div>
+        <div class="proj-card-inner">
+          <div class="proj-num">04 — Training</div>
+          <div class="proj-title">Nepal Police HQ — UAV training</div>
+          <div class="proj-desc">Trained police personnel on aerial drone survey techniques and UAV operations at Nepal's national headquarters.</div>
+          <div class="proj-loc"><i class="fa-solid fa-location-dot"></i> Kathmandu, Bagmati Province</div>
+        </div>
+        <div class="proj-hover-line"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Skills -->
+<section class="skills-section" id="skills">
+  <div class="skills-inner">
+    <div>
+      <div class="section-label fade-up">Technical expertise</div>
+      <h2 class="section-title fade-up">Skills &<br><em>tools</em></h2>
+      <p class="about-text fade-up" style="margin-top:0">From drone operations to CAD design, my toolkit spans both fieldwork and digital engineering.</p>
+    </div>
+    <div>
+      <div class="skill-item"><div class="skill-header"><span class="skill-name">Drone / UAV surveying</span><span class="skill-pct">90%</span></div><div class="skill-track"><div class="skill-fill" data-width="90"></div></div></div>
+      <div class="skill-item" style="transition-delay:.08s"><div class="skill-header"><span class="skill-name">LiDAR & topographic mapping</span><span class="skill-pct">85%</span></div><div class="skill-track"><div class="skill-fill" data-width="85"></div></div></div>
+      <div class="skill-item" style="transition-delay:.16s"><div class="skill-header"><span class="skill-name">DGPS / GPS surveying</span><span class="skill-pct">82%</span></div><div class="skill-track"><div class="skill-fill" data-width="82"></div></div></div>
+      <div class="skill-item" style="transition-delay:.24s"><div class="skill-header"><span class="skill-name">AutoCAD / Smart Road</span><span class="skill-pct">80%</span></div><div class="skill-track"><div class="skill-fill" data-width="80"></div></div></div>
+      <div class="skill-item" style="transition-delay:.32s"><div class="skill-header"><span class="skill-name">ArcGIS</span><span class="skill-pct">75%</span></div><div class="skill-track"><div class="skill-fill" data-width="75"></div></div></div>
+      <div class="skill-item" style="transition-delay:.4s"><div class="skill-header"><span class="skill-name">Site & construction engineering</span><span class="skill-pct">88%</span></div><div class="skill-track"><div class="skill-fill" data-width="88"></div></div></div>
+      <div class="skill-item" style="transition-delay:.48s"><div class="skill-header"><span class="skill-name">Road alignment & as-built survey</span><span class="skill-pct">86%</span></div><div class="skill-track"><div class="skill-fill" data-width="86"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Experience -->
+<section class="experience-section" id="experience">
+  <div class="experience-inner">
+    <div class="section-label fade-up">Career timeline</div>
+    <h2 class="section-title fade-up">Where I've<br><em>worked</em></h2>
+    <div class="timeline">
+
+      <div class="tl-entry">
+        <div class="tl-dot"></div>
+        <div class="tl-date">Apr 2024 — Present</div>
+        <div class="tl-role">Civil Design Engineer</div>
+        <div class="tl-org">Hydrocon Nepal PVT. LTD. — Kathmandu</div>
+        <div class="tl-tags">
+          <span class="tag">LiDAR surveys</span>
+          <span class="tag">Drone UAV</span>
+          <span class="tag">Road design</span>
+          <span class="tag">Hydro power</span>
+          <span class="tag">DGPS</span>
+          <span class="tag">UAV training</span>
+          <span class="tag">As-built measurement</span>
+          <span class="tag">Site engineering</span>
+        </div>
+      </div>
+
+      <div class="tl-entry" style="transition-delay:.15s">
+        <div class="tl-dot"></div>
+        <div class="tl-date">January 2025</div>
+        <div class="tl-role">BE Civil Engineering</div>
+        <div class="tl-org">Cosmos College of Management & Technology, Pokhara University</div>
+        <div class="tl-tags">
+          <span class="tag">CGPA 2.83</span>
+          <span class="tag">Structural engineering</span>
+          <span class="tag">Geomatics</span>
+          <span class="tag">Highway design</span>
+        </div>
+      </div>
+
+      <div class="tl-entry" style="transition-delay:.3s">
+        <div class="tl-dot"></div>
+        <div class="tl-date">May 2017</div>
+        <div class="tl-role">Physical Science (Intermediate)</div>
+        <div class="tl-org">Bridgewater International College — Kathmandu</div>
+        <div class="tl-tags">
+          <span class="tag">Science stream</span>
+          <span class="tag">CGPA 2.79</span>
+        </div>
+      </div>
+
+      <div class="tl-entry" style="transition-delay:.45s">
+        <div class="tl-dot"></div>
+        <div class="tl-date">April 2015</div>
+        <div class="tl-role">SLC — School Leaving Certificate</div>
+        <div class="tl-org">Shanti Model Higher Secondary School — Rupandehi</div>
+        <div class="tl-tags">
+          <span class="tag">CGPA 3.55</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Contact -->
+<section class="contact-section" id="contact">
+  <div class="contact-inner">
+    <div>
+      <div class="section-label fade-up">Get in touch</div>
+      <h2 class="section-title fade-up">Let's work<br><em>together</em></h2>
+      <p class="about-text fade-up">Available for civil engineering, drone survey, LiDAR mapping projects, and UAV training engagements across Nepal and internationally.</p>
+      <div class="contact-links">
+        <a href="mailto:contact.sabinchaudhary@gmail.com" class="contact-link">
+          <div class="icon"><i class="fa-solid fa-envelope"></i></div>
+          <span>contact.sabinchaudhary@gmail.com</span>
+        </a>
+        <a href="https://www.facebook.com/share/1AzJ6gvQdP/" target="_blank" rel="noopener" class="contact-link">
+          <div class="icon"><i class="fa-brands fa-facebook-f"></i></div>
+          <span>facebook.com/sabin.chaudhary</span>
+        </a>
+        <a href="https://www.instagram.com/mailo_sabin?igsh=OXZvcHlkcHNtbHYz" target="_blank" rel="noopener" class="contact-link">
+          <div class="icon"><i class="fa-brands fa-instagram"></i></div>
+          <span>@mailo_sabin</span>
+        </a>
+        <a href="https://www.linkedin.com/in/sabin-chaudhary-mailo?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener" class="contact-link">
+          <div class="icon"><i class="fa-brands fa-linkedin-in"></i></div>
+          <span>linkedin.com/in/sabin-chaudhary-mailo</span>
+        </a>
+        <a href="https://youtube.com/@mr.chaudhary5767" target="_blank" rel="noopener" class="contact-link">
+          <div class="icon"><i class="fa-brands fa-youtube"></i></div>
+          <span>youtube.com/@mr.chaudhary5767</span>
+        </a>
+      </div>
+    </div>
+    <div>
+      <div class="contact-cta fade-up">
+        <div class="cta-title">Open to <em style="font-style:italic;color:var(--amber)">opportunities</em></div>
+        <p class="cta-desc">Whether you need precision drone surveys, LiDAR mapping for hydro infrastructure, road design, or UAV training — I'm available for both contract and full-time engagements.</p>
+        <a href="mailto:contact.sabinchaudhary@gmail.com" class="cta-btn">
+          <i class="fa-solid fa-paper-plane"></i>
+          Send a message
+        </a>
+      </div>
+      <div class="fade-up" style="margin-top:24px; padding:28px; border:0.5px solid rgba(200,133,42,0.1); border-radius:2px">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;color:var(--amber);margin-bottom:12px">LOCATION</div>
+        <div style="font-size:14px;color:var(--cream)">Tilottama-07, Rupandehi</div>
+        <div style="font-size:13px;color:var(--muted)">Lumbini Province, Nepal</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:rgba(107,98,69,0.6);margin-top:8px">+977 9818037007</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-name">Sabin Chaudhary</div>
+  <div class="footer-copy">© 2026 — Civil & Drone Survey Engineer — Nepal</div>
+</footer>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════ -->
+<style>
+@keyframes spin { from { transform: scaleX(1); } to { transform: scaleX(-1); } }
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+@keyframes droneFloat { 0%,100% { transform:translateY(0px) rotate(-1deg); } 50% { transform:translateY(-8px) rotate(1deg); } }
+</style>
+
+<script>
+/* ─── Cursor ─── */
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx + 'px';
+  cursor.style.top = my + 'px';
+});
+
+function animRing() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  ring.style.left = rx + 'px';
+  ring.style.top = ry + 'px';
+  requestAnimationFrame(animRing);
+}
+animRing();
+
+document.querySelectorAll('a, button, .proj-card').forEach(el => {
+  el.addEventListener('mouseenter', () => { cursor.style.width='20px'; cursor.style.height='20px'; ring.style.width='60px'; ring.style.height='60px'; ring.style.opacity='0.3'; });
+  el.addEventListener('mouseleave', () => { cursor.style.width='12px'; cursor.style.height='12px'; ring.style.width='40px'; ring.style.height='40px'; ring.style.opacity='0.5'; });
+});
+
+/* ─── Stars ─── */
+const starsEl = document.getElementById('layer-stars');
+for (let i = 0; i < 180; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const size = Math.random() * 2.5 + 0.5;
+  s.style.cssText = `width:${size}px;height:${size}px;top:${Math.random()*60}%;left:${Math.random()*100}%;--d:${(Math.random()*3+2).toFixed(1)}s;--delay:${(Math.random()*4).toFixed(1)}s;--lo:${(Math.random()*0.2+0.05).toFixed(2)};--hi:${(Math.random()*0.5+0.3).toFixed(2)}`;
+  starsEl.appendChild(s);
+}
+
+/* ─── Nav scroll ─── */
+const nav = document.getElementById('main-nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+}, { passive: true });
+
+/* ─── Progress bar ─── */
+const pb = document.getElementById('progress-bar');
+function updateProgress() {
+  const pct = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight) * 100;
+  pb.style.width = pct + '%';
+}
+window.addEventListener('scroll', updateProgress, { passive: true });
+
+/* ─── Cinematic Parallax Scene ─── */
+const sceneWrapper = document.getElementById('scene-wrapper');
+const layerSky    = document.getElementById('layer-sky');
+const layerStars  = document.getElementById('layer-stars');
+const layerFar    = document.getElementById('layer-mtn-far');
+const layerMid    = document.getElementById('layer-mtn-mid');
+const layerNear   = document.getElementById('layer-mtn-near');
+const layerGround = document.getElementById('layer-ground');
+const layerFog    = document.getElementById('layer-fog');
+const drone       = document.getElementById('drone');
+const heroText    = document.getElementById('hero-text');
+const sceneOverlay = document.getElementById('scene-overlay');
+const hudAlt      = document.getElementById('hud-alt');
+const hudDist     = document.getElementById('hud-dist');
+const altThumb    = document.getElementById('alt-thumb');
+const altVal      = document.getElementById('alt-val');
+const hud         = document.getElementById('hud');
+
+/* Scene phases:
+  0→1  = descend from space: stars fade in, mountains reveal (t: 0→0.25)
+  0.25→0.5 = hero intro: hero text, drone flies in
+  0.5→0.75 = zoom into terrain, push forward
+  0.75→1  = fade to content
+*/
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+function easeOut(t) { return 1 - Math.pow(1-t, 3); }
+
+let droneX = 0, droneY = 0, targetDroneX = 0, targetDroneY = 0;
+let droneFlt = 0;
+
+document.addEventListener('mousemove', e => {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  targetDroneX = (e.clientX - vw/2) / vw * 30;
+  targetDroneY = (e.clientY - vh/2) / vh * 15;
+});
+
+let lastY = 0;
+function onFrame() {
+  const scrollY  = window.scrollY;
+  const wrapH    = sceneWrapper.offsetHeight;
+  const vh       = window.innerHeight;
+  const raw      = scrollY / (wrapH - vh);  // 0..1
+  const t        = clamp(raw, 0, 1);
+
+  /* Phase splits */
+  const t1 = clamp(t / 0.3, 0, 1);         // stars + mountain reveal
+  const t2 = clamp((t - 0.1) / 0.4, 0, 1); // hero text phase
+  const t3 = clamp((t - 0.4) / 0.4, 0, 1); // zoom / push
+  const t4 = clamp((t - 0.75) / 0.25, 0, 1); // fade out
+
+  const e1 = easeOut(t1);
+  const e3 = easeInOut(t3);
+  const e4 = easeInOut(t4);
+
+  /* ── Sky ── */
+  // lightens slightly as we descend
+  const skyL = lerp(0, 12, t3);
+  layerSky.style.background = `radial-gradient(ellipse 80% 60% at 50% ${30 + t3*10}%, hsl(45,${Math.round(skyL)}%,${Math.round(skyL*0.4)}%) 0%, #0a0800 55%, #020100 100%)`;
+
+  /* ── Stars ── fade out as we descend ── */
+  layerStars.style.opacity = Math.max(0, 1 - t3 * 2.5);
+  layerStars.style.transform = `translateY(${-t3 * 40}px) scale(${1 + t3 * 0.05})`;
+
+  /* ── Parallax depths ── */
+  // Far mountains: slowest horizontal drift, zoom on push
+  const farY  = lerp(60, 0, e1);
+  const farS  = lerp(1.0, 1.15, e3);
+  const farYo = lerp(0, -40, e3);
+  layerFar.style.transform  = `translateY(${farY + farYo}px) scale(${farS})`;
+  layerFar.style.opacity    = clamp(e1 * 1.2, 0, 1);
+
+  // Mid mountains
+  const midY  = lerp(80, 0, easeOut(t1));
+  const midS  = lerp(1.0, 1.25, e3);
+  const midYo = lerp(0, -70, e3);
+  layerMid.style.transform  = `translateY(${midY + midYo}px) scale(${midS})`;
+  layerMid.style.opacity    = clamp((t1 - 0.1) * 1.5, 0, 1);
+
+  // Near mountains: faster parallax
+  const nearY  = lerp(120, 0, easeOut(Math.max(0, (t1-0.15)/0.85)));
+  const nearS  = lerp(1.0, 1.35, e3);
+  const nearYo = lerp(0, -100, e3);
+  layerNear.style.transform = `translateY(${nearY + nearYo}px) scale(${nearS})`;
+  layerNear.style.opacity   = clamp((t1 - 0.2) * 1.8, 0, 1);
+
+  // Ground: fastest, biggest scale
+  const gndY  = lerp(160, 0, easeOut(Math.max(0, (t1-0.3)/0.7)));
+  const gndS  = lerp(1.0, 1.5, e3);
+  const gndYo = lerp(0, -150, e3);
+  layerGround.style.transform = `translateY(${gndY + gndYo}px) scale(${gndS})`;
+  layerGround.style.opacity   = clamp((t1 - 0.35) * 2, 0, 1);
+
+  /* ── Fog atmospheric ── */
+  const fogO = lerp(0, 0.7, e3) * (1 - e4 * 0.5);
+  layerFog.style.opacity = fogO;
+
+  /* ── Hero text ── */
+  const htO = clamp(t2 * 3, 0, 1) * (1 - e4 * 3);
+  const htY = lerp(30, 0, easeOut(t2)) - e3 * 20;
+  heroText.style.opacity   = Math.max(0, htO);
+  heroText.style.transform = `translateY(${htY}px)`;
+
+  /* ── HUD ── */
+  const hudO = clamp(t2 * 2, 0, 1) * Math.max(0, 1 - e4 * 4);
+  hud.style.opacity = hudO;
+
+  /* ── HUD data ── */
+  const altitude = Math.round(lerp(800, 120, t3));
+  hudAlt.textContent = String(altitude).padStart(4, '0');
+  hudDist.textContent = (t * 8.4).toFixed(1);
+  altThumb.style.height = (t3 * 120) + 'px';
+  altVal.textContent = altitude + 'm';
+
+  /* ── Drone ── */
+  droneFlt += 0.02;
+  droneX += (targetDroneX - droneX) * 0.06;
+  droneY += (targetDroneY - droneY) * 0.06;
+
+  const dronePhase = clamp((t - 0.15) / 0.25, 0, 1);
+  const droneOut   = clamp((t - 0.75) / 0.1, 0, 1);
+  const droneO     = easeOut(dronePhase) * (1 - droneOut);
+
+  // Drone flies in from top-right and hovers
+  const dStartX = window.innerWidth * 0.9;
+  const dStartY = -60;
+  const dEndX   = window.innerWidth * 0.62 + droneX;
+  const dEndY   = window.innerHeight * 0.32 + Math.sin(droneFlt) * 6 + droneY;
+
+  const dp = easeOut(dronePhase);
+  drone.style.left    = lerp(dStartX, dEndX, dp) + 'px';
+  drone.style.top     = lerp(dStartY, dEndY, dp) + 'px';
+  drone.style.opacity = droneO;
+  drone.style.transform = `rotate(${droneX * 0.3}deg)`;
+
+  /* ── Scene fade to content ── */
+  sceneOverlay.style.background = `rgba(13,11,7,${e4})`;
+
+  /* ── Scroll hint ── */
+  document.querySelector('.hero-scroll-hint').style.opacity = Math.max(0, 1 - t * 6);
+
+  lastY = scrollY;
+  requestAnimationFrame(onFrame);
+}
+requestAnimationFrame(onFrame);
+
+/* ─── Intersection Observer for content sections ─── */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      if (entry.target.classList.contains('skill-item')) {
+        const fill = entry.target.querySelector('.skill-fill');
+        if (fill) fill.style.width = fill.dataset.width + '%';
+      }
+      // Don't unobserve stats boxes — re-animate if revisited? Keep as visible.
+    }
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.fade-up, .trait-row, .stat-box, .proj-card, .skill-item, .tl-entry').forEach(el => io.observe(el));
+
+/* ─── Smooth anchor scroll ─── */
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+
+</body>
+</html>
